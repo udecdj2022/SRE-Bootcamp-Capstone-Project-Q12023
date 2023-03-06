@@ -1,0 +1,14 @@
+version: "3.3"
+
+services:
+
+  apidj:
+    image: bootcamp:v1
+    #build: .
+    volumes:
+      - ./:/usr/src/app
+        #- ./routes:/usr/src/app/routes
+        #- ./test:/usr/src/app/test
+    ports:
+      - "8000:8000"
+
