@@ -58,7 +58,7 @@ def url_login():
 @app.route("/cidr-to-mask")
 def url_cidr_to_mask():
     auth_header = request.headers.get('Authorization')
-    if not protected.access_data(auth_header):
+    if not protected.access_Data(auth_header):
         abort(401)
 
     cidr = request.args.get('value')
@@ -77,7 +77,7 @@ def url_cidr_to_mask():
 @app.route("/mask-to-cidr")
 def url_mask_to_cidr():
     auth_header = request.headers.get('Authorization')
-    if not protected.access_data(auth_header):
+    if not protected.access_Data(auth_header):
         abort(401)
 
     mask = request.args.get('value')
@@ -97,7 +97,7 @@ def url_mask_to_cidr():
 @app.route("/validate-ip")
 def url_validate_ip():
     auth_header = request.headers.get('Authorization')
-    if not protected.access_data(auth_header):
+    if not protected.access_Data(auth_header):
         abort(401)
 
     ip = request.args.get('value')
