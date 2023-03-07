@@ -1,16 +1,15 @@
 from flask import Flask, jsonify, request, abort
 import mysql.connector
 
-from convert import CidrMaskConvert
+from convert import *
 from methods import Token, Restricted
-from validate import IpValidate
 
 
 app = Flask(__name__)
 login = Token()
 protected = Restricted()
 converter = CidrMaskConvert()
-validator = IpValidate()
+
 
 @app.route("/")
 def url_root():
@@ -99,7 +98,7 @@ def url_validate_ip():
     auth_header = request.headers.get('Authorization')
     if not protected.access_Data(auth_header):
         abort(401)
-
+    validator = IpValidate()    
     ip = request.args.get('value')
     result = validator.validate_ip(ip)
 
