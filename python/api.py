@@ -1,64 +1,114 @@
-from flask import *   
-from convert import *  
-from methods import *  
-from convert import *
+from flask import Flask, jsonify, request, abort
 import mysql.connector
+
+from convert import CidrMaskConvert
+from methods import Token, Restricted
+from validate import IpValidate
+
 
 app = Flask(__name__)
 login = Token()
 protected = Restricted()
-convert = CidrMaskConvert()
-validate = IpValidate()
+converter = CidrMaskConvert()
+validator = IpValidate()
 
-
-# Just a health check
 @app.route("/")
-def urlRoot():  
+def url_root():
     return "OK"
-# Just a health check
+
+# Health check
 @app.route("/_health")
-def urlHealth():
-    return "OK"  
-# e.g. http://127.0.0.1:8000/login
+def url_health():
+    return "OK"
+
+# Login endpoint
 @app.route("/login", methods=['POST'])
-def urlLogin():
-    var1 = request.form['username']
-    var2 = request.form['password']
-    # This database data is here just for you to test, please, remember to define your own DB
-    # You can test with username = admin, password = secret  
-    # This DB has already a best practice: a salt value to store the passwords
-    con = mysql.connector.connect(
-        host='sre-bootcamp.czdpg2eovfhn.us-west-1.rds.amazonaws.com',
-        user='secret',
-        password='jOdznoyH6swQB9sTGdLUeeSrtejWkcw',
-        database='bootcamp_tht'  
-    )
-    cursor=con.cursor()
-    cursor.execute(f"SELECT salt, password, role from users where username ='{var1}';")
-    Query= cursor.fetchall()
-    var3 = login.generateToken(var1, var2, Query)
-    if var3 is not False:
-        r = {"data": var3}
-        return jsonify(r)
-    abort(401)  
-# e.g. http://127.0.0.1:8000/cidr-to-mask?value=8
+def url_login():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    # Connect to the database
+    try:
+        conn = mysql.connector.connect(
+            host='sre-bootcamp.czdpg2eovfhn.us-west-1.rds.amazonaws.com',
+            user='secret',
+            password='jOdznoyH6swQB9sTGdLUeeSrtejWkcw',
+            database='bootcamp_tht'
+        )
+
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT salt, password, role from users where username ='{username}';")
+        result = cursor.fetchall()
+        
+        token = login.generateToken(username, password, result)
+        if token is not False:
+            return jsonify({"data": token})
+
+        abort(401)
+
+    except mysql.connector.Error as e:
+        abort(500, str(e))
+
+    finally:
+        cursor.close()
+        conn.close()
+
+
+
 @app.route("/cidr-to-mask")
-def urlCidrToMask():
-    var1 = request.headers.get('Authorization')
-    if not protected.access_Data(var1):
-        abort(401)   
-    val = request.args.get('value')
-    r = {"function": "cidrToMask","input": val,"output": convert.cidr_to_mask(val), }
-    return jsonify(r)  
-# # e.g. http://127.0.0.1:8000/mask-to-cidr?value=255.0.0.0
+def url_cidr_to_mask():
+    auth_header = request.headers.get('Authorization')
+    if not protected.access_data(auth_header):
+        abort(401)
+
+    cidr = request.args.get('value')
+    mask = converter.cidr_to_mask(cidr)
+
+    if mask is not None:
+        return jsonify({
+            "function": "cidrToMask",
+            "input": cidr,
+            "output": mask
+        })
+
+    abort(400, "Invalid CIDR notation")
+
+
 @app.route("/mask-to-cidr")
-def urlMaskToCidr():  
-    var1 = request.headers.get('Authorization')
-    if not protected.access_Data(var1):
-        abort(401) 
-    val = request.args.get('value')
-    r = { "function": "maskToCidr","input": val,"output": convert.mask_to_cidr(val),}
-    return jsonify(r)
+def url_mask_to_cidr():
+    auth_header = request.headers.get('Authorization')
+    if not protected.access_data(auth_header):
+        abort(401)
+
+    mask = request.args.get('value')
+    cidr = converter.mask_to_cidr(mask)
+
+    if cidr is not None:
+        return jsonify({
+            "function": "maskToCidr",
+            "input": mask,
+            "output": cidr
+        })
+
+    abort(400, "Invalid subnet mask")
+
+
+
+@app.route("/validate-ip")
+def url_validate_ip():
+    auth_header = request.headers.get('Authorization')
+    if not protected.access_data(auth_header):
+        abort(401)
+
+    ip = request.args.get('value')
+    result = validator.validate_ip(ip)
+
+    return jsonify({
+        "function": "validateIp",
+        "input": ip,
+        "output": result
+    })
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
 
