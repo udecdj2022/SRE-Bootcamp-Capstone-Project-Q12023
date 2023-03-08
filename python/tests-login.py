@@ -1,17 +1,49 @@
 import unittest
+from unittest.mock import patch, MagicMock
 from methods import *
 
 
 class TestStringMethods(unittest.TestCase):
 
     def setUp(self):
-        self.convert = Token()
-        self.validate = Restricted()
+        self.restricted = Restricted()
+        self.token = Token()
+   
+    @patch('methods.hashlib.sha512')
+    @patch('methods.jwt.encode')
+    def test_generate_token_success(self, mock_jwt_encode, mock_sha512):
+        # Mock database query result
+        mock_query_result = [('salt', 'hashed_password', 'admin')]
 
-    def test_generate_token(self):
-        self.assertEqual('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.BmcZ8aB5j8wLSK8CqdDwkGxZfFwM1X1gfAIN7cXOx9w', self.convert.generateToken('admin', 'secret'))
+        # Mock sha512 and jwt.encode functions
+        mock_sha512.return_value.hexdigest.return_value = 'hashed_password'
+        mock_jwt_encode.return_value = 'jwt_token'
+
+        # Call the method and check the result
+        expected_token = self.token.generateToken('adminn', 'secrett', mock_query_result)
+        self.assertEqual(expected_token, 'jwt_token')
+
+    def test_generate_token_failure(self):
+        query_result = [('salt', 'passwordw', 'admin')]
+        expected_token = self.token.generateToken('admin', 'wrongpassword', query_result)
+        self.assertIsNone(expected_token)
+    
+        
     def test_access_data(self):
-        self.assertEqual('You are under protected data', self.validate.access_Data('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.BmcZ8aB5j8wLSK8CqdDwkGxZfFwM1X1gfAIN7cXOx9w'))
+        result = self.restricted.access_Data('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.BmcZ8aB5j8wLSK8CqdDwkGxZfFwM1X1gfAIN7cXOx9w')
+        self.assertEqual('Access Granted', result)
+
+    def test_access_data_valid_token(self):
+        authorization_header = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4ifQ.StuYX978pQGnCeeaj2E1yBYwQvZIodyDTCJWXdsxBGI' 
+        self.assertEqual('Access Granted', self.restricted.access_Data(authorization_header))
+
+    def test_access_data_invalid_token(self):
+        result = self.restricted.access_Data('invalid_token')
+        self.assertFalse(result)
+
+    def test_access_data_missing_token(self):
+        result = self.restricted.access_Data(None)
+        self.assertFalse(result)
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,8 +5,9 @@ SECRET_KEY = 'my2w7wjd7yXF64FIADfJxNs1oupTGAuW'
 
 class Token:
     def generateToken(self, username, input_password, query_result):
-        if len(query_result) == 0:
-            return False
+        if not query_result:
+            #return False
+            raise ValueError('User not found')
 
         salt, password, role = query_result[0]
         hashed_password = hashlib.sha512((input_password + salt).encode()).hexdigest()
@@ -15,7 +16,10 @@ class Token:
             encoded_jwt = jwt.encode({"role": role}, SECRET_KEY, algorithm='HS256')
             return encoded_jwt
         else:
-            return False
+            #return False
+            #raise ValueError('Incorrect Password')
+            return None
+
 
 class Restricted:
     def access_Data(self, authorization_header):
@@ -27,4 +31,8 @@ class Restricted:
         except jwt.exceptions.InvalidTokenError:
             return False
 
-        return 'role' in decoded_token
+        #return 'role' in decoded_token
+        if 'role' in decoded_token:
+            return 'Access Granted'
+        else:
+            return False
