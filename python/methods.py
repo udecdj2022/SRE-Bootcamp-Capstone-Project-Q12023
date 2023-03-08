@@ -12,13 +12,24 @@ class Token:
         salt, password, role = query_result[0]
         hashed_password = hashlib.sha512((input_password + salt).encode()).hexdigest()
 
-        if hashed_password == password:
-            encoded_jwt = jwt.encode({"role": role}, SECRET_KEY, algorithm='HS256')
-            return encoded_jwt
-        else:
+        #if hashed_password != password:
+        #    raise ValueError('Incorrect Password')
+        #if not password.lower() == hashed_password.lower():
+        if password.lower() != hashed_password.lower():
+            raise ValueError('Incorrect Password')
+
+        payload = {"role": role}
+        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        return token
+
+            #encoded_jwt = jwt.encode({"role": role}, SECRET_KEY, algorithm='HS256')
+            #return encoded_jwt
+        
+
+        #else:
             #return False
             #raise ValueError('Incorrect Password')
-            return None
+            #return None
 
 
 class Restricted:

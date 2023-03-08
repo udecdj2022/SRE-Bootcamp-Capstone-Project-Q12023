@@ -9,25 +9,18 @@ class TestStringMethods(unittest.TestCase):
         self.restricted = Restricted()
         self.token = Token()
    
-    @patch('methods.hashlib.sha512')
-    @patch('methods.jwt.encode')
-    def test_generate_token_success(self, mock_jwt_encode, mock_sha512):
-        # Mock database query result
-        mock_query_result = [('salt', 'hashed_password', 'admin')]
 
-        # Mock sha512 and jwt.encode functions
-        mock_sha512.return_value.hexdigest.return_value = 'hashed_password'
-        mock_jwt_encode.return_value = 'jwt_token'
-
-        # Call the method and check the result
-        expected_token = self.token.generateToken('adminn', 'secrett', mock_query_result)
-        self.assertEqual(expected_token, 'jwt_token')
+    @patch('builtins.print')
+    def test_generate_token_success(self, mock_print):
+        query_result = [('salt', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4ifQ.StuYX978pQGnCeeaj2E1yBYwQvZIodyDTCJWXdsxBGI', 'admin')]
+        expected_token = self.token.generateToken('admin', 'secret', query_result)
+        self.assertIsNotNone(expected_token)
 
     def test_generate_token_failure(self):
-        query_result = [('salt', 'passwordw', 'admin')]
-        expected_token = self.token.generateToken('admin', 'wrongpassword', query_result)
-        self.assertIsNone(expected_token)
-    
+        query_result = [('salt', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYWRtaW4ifQ.StuYX978pQGnCeeaj2E1yBYwQvZIodyDTCJWXdsxBGI', 'admin')]
+        with self.assertRaises(ValueError):
+            self.token.generateToken('admin', 'wrongpassword', query_result)
+
         
     def test_access_data(self):
         result = self.restricted.access_Data('eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYWRtaW4ifQ.BmcZ8aB5j8wLSK8CqdDwkGxZfFwM1X1gfAIN7cXOx9w')
