@@ -1,36 +1,24 @@
 import hashlib
 import jwt
 
+
 SECRET_KEY = 'my2w7wjd7yXF64FIADfJxNs1oupTGAuW'
 
 class Token:
+
     def generateToken(self, username, input_password, query_result):
         if not query_result:
-            #return False
             raise ValueError('User not found')
 
         salt, password, role = query_result[0]
         hashed_password = hashlib.sha512((input_password + salt).encode()).hexdigest()
 
-        #if hashed_password != password:
-        #    raise ValueError('Incorrect Password')
-        #if not password.lower() == hashed_password.lower():
         if password.lower() != hashed_password.lower():
             raise ValueError('Incorrect Password')
 
         payload = {"role": role}
         token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
         return token
-
-            #encoded_jwt = jwt.encode({"role": role}, SECRET_KEY, algorithm='HS256')
-            #return encoded_jwt
-        
-
-        #else:
-            #return False
-            #raise ValueError('Incorrect Password')
-            #return None
-
 
 class Restricted:
     def access_Data(self, authorization_header):
@@ -44,6 +32,6 @@ class Restricted:
 
         #return 'role' in decoded_token
         if 'role' in decoded_token:
-            return 'Access Granted'
+            return 'You are under protected data'
         else:
             return False
